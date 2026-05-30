@@ -339,13 +339,28 @@
             
             allData.forEach(row => {
                 const tr = document.createElement('tr');
-                const statusClass = row.status === 'Current' ? 'status-current' : 'status-expired';
+                
+                // Parse expiry date (DD/MM/YYYY format)
+                const [day, month, year] = row.expiry.split('/').map(Number);
+                const expiryDate = new Date(year, month - 1, day);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                
+                // Determine actual status based on date
+                let actualStatus = row.status;
+                if (expiryDate < today) {
+                    actualStatus = 'Expired';
+                } else if (row.status !== 'Expired') {
+                    actualStatus = 'Current';
+                }
+                
+                const statusClass = actualStatus === 'Current' ? 'status-current' : 'status-expired';
                 tr.innerHTML = `
                     <td>${row.name}</td>
                     <td style="font-family: monospace; font-size: 12px;">${row.course}</td>
                     <td style="color: #666;">${row.description}</td>
                     <td>${row.expiry}</td>
-                    <td><span class="status-badge ${statusClass}">${row.status}</span></td>
+                    <td><span class="status-badge ${statusClass}">${actualStatus}</span></td>
                 `;
                 tbody.appendChild(tr);
             });
@@ -355,8 +370,23 @@
 
         function updateSummary() {
             const total = allData.length;
-            const current = allData.filter(r => r.status === 'Current').length;
-            const expired = allData.filter(r => r.status === 'Expired').length;
+            
+            // Calculate current/expired based on actual dates
+            let current = 0;
+            let expired = 0;
+            
+            allData.forEach(row => {
+                const [day, month, year] = row.expiry.split('/').map(Number);
+                const expiryDate = new Date(year, month - 1, day);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                
+                if (expiryDate < today) {
+                    expired++;
+                } else {
+                    current++;
+                }
+            });
             
             document.getElementById('total-records').textContent = total;
             document.getElementById('current-records').textContent = current;
@@ -444,4 +474,3 @@
     </script>
 </body>
 </html>
-       
