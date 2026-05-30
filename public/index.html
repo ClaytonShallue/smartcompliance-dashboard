@@ -395,11 +395,25 @@
 
         function filterTable() {
             const search = document.getElementById('searchInput').value.toLowerCase();
+            const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+            const showCurrent = checkboxes[0].checked;
+            const showExpired = checkboxes[1].checked;
+            
             const rows = document.querySelectorAll('#tableBody tr');
             
             rows.forEach(row => {
                 const text = row.textContent.toLowerCase();
-                row.style.display = text.includes(search) ? '' : 'none';
+                const status = row.textContent.includes('Expired') ? 'Expired' : 'Current';
+                
+                let show = text.includes(search);
+                
+                // If no checkboxes checked, show all
+                if (showCurrent || showExpired) {
+                    if (status === 'Current' && !showCurrent) show = false;
+                    if (status === 'Expired' && !showExpired) show = false;
+                }
+                
+                row.style.display = show ? '' : 'none';
             });
         }
 
