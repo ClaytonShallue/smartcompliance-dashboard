@@ -51,6 +51,16 @@
             font-size: 12px;
             margin-top: 0.5rem;
         }
+        .info-box {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 6px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            color: #1e40af;
+            font-size: 13px;
+            line-height: 1.5;
+        }
         .buttons {
             display: flex;
             gap: 0.75rem;
@@ -227,24 +237,28 @@
         <p class="timestamp" id="timestamp">Last updated: --:--:--</p>
     </div>
 
+    <div class="info-box">
+        📋 <strong>CSV is the Source of Truth.</strong> Edit training data in your CSV file, then import to update the dashboard. All changes come from the CSV.
+    </div>
+
     <div class="buttons">
-        <button onclick="importCSV()">📤 Import CSV</button>
+        <button onclick="importCSV()" class="btn-primary">📤 Import CSV</button>
         <button onclick="exportCSV()">📥 Export CSV</button>
-        <button onclick="exportPDF()" class="btn-primary">📄 Export PDF</button>
+        <button onclick="exportPDF()">📄 Export PDF</button>
     </div>
 
     <div class="summary">
         <div class="summary-card">
             <p class="summary-label">Total Records</p>
-            <p class="summary-value value-total" id="total-records">3</p>
+            <p class="summary-value value-total" id="total-records">0</p>
         </div>
         <div class="summary-card">
             <p class="summary-label">Current</p>
-            <p class="summary-value value-current" id="current-records">2</p>
+            <p class="summary-value value-current" id="current-records">0</p>
         </div>
         <div class="summary-card">
             <p class="summary-label">Expired</p>
-            <p class="summary-value value-expired" id="expired-records">1</p>
+            <p class="summary-value value-expired" id="expired-records">0</p>
         </div>
     </div>
 
@@ -297,21 +311,16 @@
     <div id="importModal" class="modal">
         <div class="modal-content">
             <h2 style="margin-bottom: 1rem;">Import Training Data</h2>
-            <p style="color: #666; margin-bottom: 1.5rem;">Upload a CSV file</p>
-            <input type="file" id="csvFile" accept=".csv" style="width: 100%; margin-bottom: 1rem;">
-            <button onclick="handleImport()" style="width: 100%; margin-bottom: 0.5rem;">Import</button>
+            <p style="color: #666; margin-bottom: 0.5rem;"><strong>This will REPLACE all current data with your CSV file.</strong></p>
+            <p style="color: #999; margin-bottom: 1.5rem; font-size: 13px;">Make sure your CSV has these columns: Learner Name, Company, Role, Course Code, Course Description, Expiry Date, Status</p>
+            <input type="file" id="csvFile" accept=".csv" style="width: 100%; margin-bottom: 1rem; padding: 0.75rem; border: 1px solid #ddd; border-radius: 6px;">
+            <button onclick="handleImport()" class="btn-primary" style="width: 100%; margin-bottom: 0.5rem;">Import & Replace Data</button>
             <button onclick="closeModal()" style="width: 100%; background: #e5e7eb;">Cancel</button>
         </div>
     </div>
 
     <script>
-        const sampleData = [
-            { name: 'Clayton Shallue', course: 'RTIOIRARP', description: 'RTIO Individual Rail Access Road Permit', expiry: '31/03/2024', status: 'Expired' },
-            { name: 'Disa Shallue', course: 'RTIOLG', description: 'RTIO LG Grader', expiry: '03/05/2027', status: 'Current' },
-            { name: 'John Smith', course: 'RTIOLC', description: 'RTIO Land Clearing', expiry: '15/06/2026', status: 'Current' }
-        ];
-
-        let allData = [...sampleData];
+        let allData = [];
 
         function updateTimestamp() {
             const now = new Date();
@@ -321,6 +330,12 @@
         function renderTable() {
             const tbody = document.getElementById('tableBody');
             tbody.innerHTML = '';
+            
+            if (allData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #999; padding: 2rem;">No data. Import a CSV file to get started.</td></tr>';
+                updateSummary();
+                return;
+            }
             
             allData.forEach(row => {
                 const tr = document.createElement('tr');
@@ -360,6 +375,7 @@
 
         function importCSV() {
             document.getElementById('importModal').classList.add('active');
+            document.getElementById('csvFile').value = '';
         }
 
         function closeModal() {
@@ -375,6 +391,9 @@
                 const csv = e.target.result;
                 const lines = csv.split('\n');
                 const headers = lines[0].split(',').map(h => h.trim());
+                
+                // CLEAR all existing data first (CSV replaces everything)
+                allData = [];
                 
                 for (let i = 1; i < lines.length; i++) {
                     if (!lines[i].trim()) continue;
@@ -396,31 +415,33 @@
                 renderTable();
                 closeModal();
                 updateTimestamp();
+                alert(`✅ Imported ${allData.length} records. CSV is now the source of truth.`);
             };
             reader.readAsText(file);
         }
 
         function exportCSV() {
-            const headers = ['Learner Name', 'Course Code', 'Description', 'Expiry Date', 'Status'];
-            const csv = [headers.join(','), ...allData.map(r => [r.name, r.course, r.description, r.expiry, r.status].join(','))].join('\n');
+            const headers = ['Learner Name', 'Company', 'Role', 'Course Code', 'Course Description', 'Expiry Date', 'Status'];
+            const csv = [headers.join(','), ...allData.map(r => [r.name, '', '', r.course, r.description, r.expiry, r.status].join(','))].join('\n');
             
             const blob = new Blob([csv], { type: 'text/csv' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `smartcompliance-export-${new Date().toISOString().slice(0, 10)}.csv`;
+            a.download = `smartcompliance-${new Date().toISOString().slice(0, 10)}.csv`;
             a.click();
             window.URL.revokeObjectURL(url);
         }
 
         function exportPDF() {
-            alert('PDF export: Open the page and press Ctrl+P to save as PDF');
+            alert('PDF export: Open the page and press Ctrl+P (or Cmd+P on Mac) to save as PDF');
         }
 
-        // Initialize
+        // Initialize with empty data
         renderTable();
         updateTimestamp();
         setInterval(updateTimestamp, 1000);
     </script>
 </body>
 </html>
+       
