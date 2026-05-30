@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartCompliance Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background-color: #f9fafb;
+            padding: 2rem;
+        }
+        .header {
+            margin-bottom: 2rem;
+        }
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        .logo-circle {
+            width: 40px;
+            height: 40px;
+            background-color: #ea580c;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        h1 {
+            font-size: 28px;
+            font-weight: 600;
+            margin: 0;
+        }
+        .subtitle {
+            color: #666;
+            font-size: 14px;
+            margin-top: 0.5rem;
+        }
+        .timestamp {
+            color: #999;
+            font-size: 12px;
+            margin-top: 0.5rem;
+        }
+        .buttons {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+        button {
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+            background: white;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .btn-primary {
+            background: #ea580c;
+            color: white;
+            border: none;
+        }
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        .summary-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+        }
+        .summary-label {
+            color: #999;
+            font-size: 12px;
+            font-weight: 500;
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+        }
+        .summary-value {
+            font-size: 32px;
+            font-weight: 600;
+            margin: 0;
+        }
+        .value-current { color: #22c55e; }
+        .value-expired { color: #ef4444; }
+        .value-total { color: #3b82f6; }
+        .content {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 2rem;
+        }
+        .filters {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+            height: fit-content;
+        }
+        .filter-group {
+            margin-bottom: 1.5rem;
+        }
+        .filter-label {
+            display: block;
+            font-size: 12px;
+            font-weight: 500;
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+        }
+        input[type="text"], select {
+            width: 100%;
+            padding: 0.75rem;
+            font-size: 14px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+        }
+        .checkbox-group {
+            max-height: 150px;
+            overflow-y: auto;
+        }
+        label {
+            display: flex;
+            align-items: center;
+            padding: 0.5rem 0;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        input[type="checkbox"] {
+            margin-right: 0.5rem;
+            cursor: pointer;
+        }
+        .status-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 0.5rem;
+        }
+        .table-container {
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+            overflow: hidden;
+        }
+        .table-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        thead {
+            background-color: #f3f4f6;
+        }
+        th {
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            color: white;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .status-current { background-color: #22c55e; }
+        .status-expired { background-color: #ef4444; }
+        .status-due { background-color: #f59e0b; }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 999;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal.active {
+            display: flex;
+        }
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            max-width: 500px;
+            width: 90%;
+        }
+        .no-records {
+            text-align: center;
+            color: #999;
+            padding: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">
+            <div class="logo-circle">✓</div>
+            <h1>SmartCompliance</h1>
+        </div>
+        <p class="subtitle">Training & Compliance Dashboard</p>
+        <p class="timestamp" id="timestamp">Last updated: --:--:--</p>
+    </div>
+
+    <div class="buttons">
+        <button onclick="importCSV()">📤 Import CSV</button>
+        <button onclick="exportCSV()">📥 Export CSV</button>
+        <button onclick="exportPDF()" class="btn-primary">📄 Export PDF</button>
+    </div>
+
+    <div class="summary">
+        <div class="summary-card">
+            <p class="summary-label">Total Records</p>
+            <p class="summary-value value-total" id="total-records">3</p>
+        </div>
+        <div class="summary-card">
+            <p class="summary-label">Current</p>
+            <p class="summary-value value-current" id="current-records">2</p>
+        </div>
+        <div class="summary-card">
+            <p class="summary-label">Expired</p>
+            <p class="summary-value value-expired" id="expired-records">1</p>
+        </div>
+    </div>
+
+    <div class="content">
+        <div class="filters">
+            <h3 style="margin-bottom: 1.5rem; font-size: 16px; font-weight: 600;">Filters</h3>
+            
+            <div class="filter-group">
+                <label class="filter-label">Search Learner</label>
+                <input type="text" id="searchInput" placeholder="Search..." onkeyup="filterTable()">
+            </div>
+
+            <div class="filter-group">
+                <label class="filter-label">Status</label>
+                <div class="checkbox-group">
+                    <label>
+                        <input type="checkbox" onchange="filterTable()"> 
+                        <span class="status-dot" style="background: #22c55e;"></span>
+                        Current
+                    </label>
+                    <label>
+                        <input type="checkbox" onchange="filterTable()"> 
+                        <span class="status-dot" style="background: #ef4444;"></span>
+                        Expired
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <div class="table-header">
+                <h3 style="margin: 0; font-size: 16px; font-weight: 600;">Training Matrix</h3>
+            </div>
+            <table id="dataTable">
+                <thead>
+                    <tr>
+                        <th>Learner Name</th>
+                        <th>Course Code</th>
+                        <th>Description</th>
+                        <th>Expiry Date</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="importModal" class="modal">
+        <div class="modal-content">
+            <h2 style="margin-bottom: 1rem;">Import Training Data</h2>
+            <p style="color: #666; margin-bottom: 1.5rem;">Upload a CSV file</p>
+            <input type="file" id="csvFile" accept=".csv" style="width: 100%; margin-bottom: 1rem;">
+            <button onclick="handleImport()" style="width: 100%; margin-bottom: 0.5rem;">Import</button>
+            <button onclick="closeModal()" style="width: 100%; background: #e5e7eb;">Cancel</button>
+        </div>
+    </div>
+
+    <script>
+        const sampleData = [
+            { name: 'Clayton Shallue', course: 'RTIOIRARP', description: 'RTIO Individual Rail Access Road Permit', expiry: '31/03/2024', status: 'Expired' },
+            { name: 'Disa Shallue', course: 'RTIOLG', description: 'RTIO LG Grader', expiry: '03/05/2027', status: 'Current' },
+            { name: 'John Smith', course: 'RTIOLC', description: 'RTIO Land Clearing', expiry: '15/06/2026', status: 'Current' }
+        ];
+
+        let allData = [...sampleData];
+
+        function updateTimestamp() {
+            const now = new Date();
+            document.getElementById('timestamp').textContent = `Last updated: ${now.toLocaleTimeString()}`;
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+            
+            allData.forEach(row => {
+                const tr = document.createElement('tr');
+                const statusClass = row.status === 'Current' ? 'status-current' : 'status-expired';
+                tr.innerHTML = `
+                    <td>${row.name}</td>
+                    <td style="font-family: monospace; font-size: 12px;">${row.course}</td>
+                    <td style="color: #666;">${row.description}</td>
+                    <td>${row.expiry}</td>
+                    <td><span class="status-badge ${statusClass}">${row.status}</span></td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            updateSummary();
+        }
+
+        function updateSummary() {
+            const total = allData.length;
+            const current = allData.filter(r => r.status === 'Current').length;
+            const expired = allData.filter(r => r.status === 'Expired').length;
+            
+            document.getElementById('total-records').textContent = total;
+            document.getElementById('current-records').textContent = current;
+            document.getElementById('expired-records').textContent = expired;
+        }
+
+        function filterTable() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const rows = document.querySelectorAll('#tableBody tr');
+            
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(search) ? '' : 'none';
+            });
+        }
+
+        function importCSV() {
+            document.getElementById('importModal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('importModal').classList.remove('active');
+        }
+
+        function handleImport() {
+            const file = document.getElementById('csvFile').files[0];
+            if (!file) return alert('Please select a file');
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const csv = e.target.result;
+                const lines = csv.split('\n');
+                const headers = lines[0].split(',').map(h => h.trim());
+                
+                for (let i = 1; i < lines.length; i++) {
+                    if (!lines[i].trim()) continue;
+                    const values = lines[i].split(',').map(v => v.trim());
+                    const obj = {};
+                    headers.forEach((h, idx) => obj[h] = values[idx] || '');
+                    
+                    if (obj['Learner Name'] || obj['name']) {
+                        allData.push({
+                            name: obj['Learner Name'] || obj['name'] || '',
+                            course: obj['Course Code'] || obj['courseCode'] || '',
+                            description: obj['Course Description'] || obj['courseDescription'] || '',
+                            expiry: obj['Expiry Date'] || obj['expiryDate'] || '',
+                            status: obj['Status'] || obj['status'] || 'Current'
+                        });
+                    }
+                }
+                
+                renderTable();
+                closeModal();
+                updateTimestamp();
+            };
+            reader.readAsText(file);
+        }
+
+        function exportCSV() {
+            const headers = ['Learner Name', 'Course Code', 'Description', 'Expiry Date', 'Status'];
+            const csv = [headers.join(','), ...allData.map(r => [r.name, r.course, r.description, r.expiry, r.status].join(','))].join('\n');
+            
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `smartcompliance-export-${new Date().toISOString().slice(0, 10)}.csv`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+
+        function exportPDF() {
+            alert('PDF export: Open the page and press Ctrl+P to save as PDF');
+        }
+
+        // Initialize
+        renderTable();
+        updateTimestamp();
+        setInterval(updateTimestamp, 1000);
+    </script>
+</body>
+</html>
